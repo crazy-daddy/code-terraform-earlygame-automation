@@ -20,3 +20,6 @@ For the full technical rundown — architecture, the 0 → 150k TP speedrun stra
 
 
 Note: the final transition at 150k TP will not work for you - I didn't include my other (ugly) scripts :-D
+
+
+Bio-Loop forked from vakermit (https://github.com/vakermit/code-terraform-scripts) - I was too lazy to find my old bio-lab loop from before /lib unlocked... and his is way nicer anyways :-)
