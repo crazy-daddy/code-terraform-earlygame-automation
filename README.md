@@ -6,6 +6,7 @@ For the full technical rundown — architecture, the 0 → 150k TP speedrun stra
 
 ## Quick start
 
+0. This requires python as well as node installed in PATH. I only tested it under Windows - will not work under other OS (hardcoded %appdata% as I'm lazy)
 1. Launch a **new game**.
 2. Open **Settings** and click **Open Scripts Folder** (this is what initializes the save's script workspace files on disk — required before anything below will work).
 3. **Unpause** the game.
