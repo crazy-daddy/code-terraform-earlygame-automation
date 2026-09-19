@@ -264,12 +264,17 @@ def explore(p):
 
 def wanted_ores():
     # What the Smelter says it is short of (factory.ore), falling back to
-    # WANTED_ITEMS. {ore_id: units}; empty means mine anything.
+    # WANTED_ITEMS. {ore_id: units}; empty means mine anything. Copied into
+    # a plain dict rather than returned as-is (mirrors smelter.py's demand()) —
+    # best_site() below needs .get()/.values() on this, and the only thing a
+    # comms broadcast payload is guaranteed to support is .keys() indexing.
+    wanted = {}
     if comms != None:
         published = comms.latest("factory.ore")
         if published != None and len(published) > 0:
-            return published
-    wanted = {}
+            for item in published.keys():
+                wanted[item] = published[item]
+            return wanted
     for item in WANTED_ITEMS:
         wanted[item] = 1
     return wanted
@@ -278,9 +283,19 @@ def wanted_ores():
 def best_site():
     # Highest-value mineable site the drill can handle: purity multiplier
     # divided by distance, so a rich site nearby beats a pure one far off.
-    # Ore the factory is short of gets a strong preference; nothing is
-    # excluded outright, so the rover keeps working when nothing is asked.
+    #
+    # Ore the factory is short of gets preference, but not a flat "10x if
+    # wanted, else ignore" — that let one ore's sites (usually iron: more
+    # common, usually closer) win every single round and starve the other
+    # (silicon) even while the smelter kept asking for both. Weight by each
+    # ore's SHARE of the total shortfall instead, so a rover naturally
+    # drifts toward whichever ore has fallen furthest behind, and the split
+    # self-corrects as one catches up rather than fixating on one forever.
     wanted = wanted_ores()
+    total_wanted = 0
+    for amount in wanted.values():
+        total_wanted = total_wanted + amount
+
     best = None
     best_score = 0
     for site in journal.surveyed_sites(PLANET_ID):
@@ -292,11 +307,11 @@ def best_site():
             continue
         d = self.nav.get_distance_to(site.x, site.y)
         score = PURITY_VALUE.get(site.purity, 1) / (1 + d / 100)
-        if len(wanted) > 0:
-            if wanted.has(site.item_id):
-                score = score * 10
-            else:
-                score = score * 0.1
+        if total_wanted > 0:
+            need = wanted.get(site.item_id, 0)
+            score = score * (0.1 + 9.9 * (need / total_wanted))
+        elif len(wanted) > 0:
+            score = score * 0.1
         if best == None or score > best_score:
             best = site
             best_score = score

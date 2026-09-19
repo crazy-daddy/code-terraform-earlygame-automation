@@ -297,9 +297,33 @@ while True:
             safe_buy_and_deploy(computer, "battery", 4 - b_count)
 
         # Step C: Deploy 7 Heaters (Exact 25/25 slots: 7 Solar + 4 Bat + 3 Bio + 1 Charger + 1 Smelter + 1 Pres + 7 Heat = 24 slots, +1 spare!)
+        # Run the Heat Rush at full capacity - trimming a Heater up front to
+        # pre-reserve a slot for Supply Dock (110k TP, tens of thousands of TP
+        # later) just meant idling at 23/25 the whole time. Sell one instead,
+        # below, once it's actually needed.
         h_count = count_buildings("temp_heater")
         if h_count < 7:
             safe_buy_and_deploy(computer, "temp_heater", 7 - h_count)
+
+    # --------------------------------------------------------------------------
+    # PHASE 4.5: Supply Dock Deployment (Supply Logistics @ 110k TP)
+    # --------------------------------------------------------------------------
+    # research_orders_system unlocks Orders + Supply Dock purchasing at 110,000 TP,
+    # squarely inside the ~50k TP gap between the Phase 4 Pioneer breakout (100k) and
+    # the Phase 5 mid-game migration (150k). One dock is enough to start clearing the
+    # first few Earth Orders for credits early — see templates/early/supply_dock.py.
+    if total_tp >= 110000 and is_tech_unlocked("research_orders_system"):
+        if count_buildings("supply_dock") == 0:
+            # Heat Rush finished tens of thousands of TP ago by now - the full
+            # 7-Heater rush capacity isn't earning its slot anymore. Sell one to
+            # make room instead of having idled at 23/25 (or 24/25) since Phase 3
+            # just so a slot would already be free whenever this milestone hit.
+            if get_free_base_slots() < 1:
+                h_count = count_buildings("temp_heater")
+                if h_count > 5:
+                    safe_undeploy_and_sell(computer, "temp_heater", h_count - 1, "temp_heater")
+            print("[buyer] 110k TP Milestone: Deploying Supply Dock 1 for Earth Order fulfillment...")
+            safe_buy_and_deploy(computer, "supply_dock", 1, "research_orders_system")
 
     # --------------------------------------------------------------------------
     # PHASE 4: Pioneer Deployment (at 100k TP)

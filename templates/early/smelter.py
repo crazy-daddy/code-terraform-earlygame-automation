@@ -7,7 +7,11 @@ def ceil(val):
     return ival + (1 if val > ival else 0)
 
 STORE = "inventory"
-FLOORS = {"iron_ingot": 50, "silicon": 50}  # minimum stock per ingot
+# Minimum stock per ingot. Order sizes aren't discoverable ahead of a Supply
+# Dock actually being assigned one, so this is a rough buffer sized to have
+# something on hand for the first few Earth Orders the moment
+# templates/early/supply_dock.py picks one up, not an exact requirement.
+FLOORS = {"iron_ingot": 100, "silicon": 100}
 BATCH = 10                                   # units to commit to before re-choosing
 IDLE_SLEEP = 2
 POLL = 1

@@ -90,8 +90,9 @@ Research trees show prerequisites, but physical progression requires strict phas
 | **Phase 1** | **5.0 ppt $\text{O}_2$** | Ore Refinement (`research_smelter`) | Smelter unlocked in shop (650 cr). |
 | **Phase 1** | **9.0 ppt $\text{O}_2$** | Vehicle Charging Station (`research_charging_station`) | Deploy **Vehicle Charging Station 1** (1,200 cr). Fleet charging active! |
 | **Phase 2** | **0.200 kPa** | Mining Operations, Rover Chassis (`research_rover`), Drill (`research_deep_extraction`) | Recycle all 13 $\text{O}_2$ Gens down to 0 (0% decay). Deploy **12 Pressure Generators** (72W load, 25/25 slots). Resonance sync ramps to 100% in ~4 sweeps. At 0.200 kPa, deploy **2 Rovers** + **Smelter 1**. Rovers immediately mine, auto-unload to inventory, and recharge with **zero stranding**. |
-| **Phase 3** | **12.0 HU Heat** | Small Battery Holder (`research_battery_holder_small`) | Recycle 11 Pressure Gens down to 1. Scale to 7 Solar + 4 Batteries; deploy **7 Heaters** (exact 24-25 slots). Hits 12.0 HU in ~5–6 days. |
+| **Phase 3** | **12.0 HU Heat** | Small Battery Holder (`research_battery_holder_small`) | Recycle 11 Pressure Gens down to 1. Scale to 7 Solar + 4 Batteries; deploy **7 Heaters** (exact 24/25 slots, 1 spare). Hits 12.0 HU in ~5–6 days. |
 | **Phase 4** | **100,000 TP** | Pioneer Chassis (`research_pioneer`) | Tri-Pillar complete (~98.6k TP + Bio-Loop = **100,000 TP**). Assemble Pioneer, mount Nav + basic Sonar + 6x Battery Holder; runs the standalone Scout role (survey-only, no `lib/`) until Phase 5 hands it the full `PioneerController`. |
+| **Phase 4.5** | **110,000 TP** | Supply Logistics (`research_orders_system`) | Sell 1 of the 7 Heaters (Heat Rush is long done by now) to free a slot, then deploy **Supply Dock 1** (5,000 cr). Runs `templates/early/supply_dock.py` — starts clearing the first few Earth Orders for credits immediately, no `lib/` required. |
 | **Phase 5** | **150,000 TP** | Full Mid-Game Modular Architecture | `trigger_midgame_migration()` copies `lib/`; machine scripts swap to Signal Bus & Data Archive controllers. |
 
 ---
@@ -114,14 +115,15 @@ Exceeding 25 base buildings triggers the engine's soft threshold penalty (e.g. 2
    - **Phase 2 Pressure Rush**: 6 Solar + 3 Batteries + 3 Bio + 1 Charging Station + 0 $\text{O}_2$ + 12 Pressure Gens = **EXACTLY 25 / 25 SLOTS** (0% penalty!).
      - Load: 15W Base + 18W Bio + 10W Charger + 72W (12 Pressure) = 115W peak / ~100W normal. Night load: 1,008 Wh (3 Batteries have 1,500 Wh buffer $\rightarrow$ 492 Wh / 32% reserve at dawn).
      - Resonance ramp: ~4 sweeps to hit 100% sync output.
-   - **Phase 3 Heat Rush**: 7 Solar + 4 Batteries + 3 Bio + 1 Charging Station + 1 Smelter + 1 Pressure + 7 Heaters = **24 SLOTS** (1 spare slot for flex or 8th Heater!).
+   - **Phase 3 Heat Rush**: 7 Solar + 4 Batteries + 3 Bio + 1 Charging Station + 1 Smelter + 1 Pressure + 7 Heaters = **24 SLOTS** (1 spare slot for flex or 8th Heater!). Run at full Heater count during the rush itself — no point trimming it early and idling under capacity for the ~50k TP gap until Supply Dock matters.
+   - **Phase 4.5 Supply Logistics**: `solar.py` sells 1 Heater (down to 6) the moment `research_orders_system` unlocks and no slot is free, *then* deploys Supply Dock 1 = **24 SLOTS** (6 Heaters + 1 Supply Dock in place of the 7th Heater; 1 spare).
 4. **Field Units (0 Base Slots)**:
    - **2 Rovers**: Both equipped with Nav + Sonar + Drill modules. Mobile units do not consume base capacity.
    - **1 Harvester + 1 Scanner**: 0 slots.
 5. **Night Power Budget & Dynamic Throttling**:
    - 4 Batteries = **2,000 Wh** reserve.
-   - Continuous baseload: 15W Atmo + 18W Bio + 84W (7 Heaters) = **117 W**.
-   - Night consumption: $117\text{ W} \times 10.08\text{ h} = 1,179.4\text{ Wh}$ ($820.6\text{ Wh}$ surplus buffer for Rover charging).
+   - Continuous baseload: 15W Atmo + 18W Bio + 84W (7 Heaters) = **117 W**, dropping to 105W (6 Heaters) + Supply Dock's 15W = **120W** after Phase 4.5's Heater-for-Dock swap.
+   - Night consumption: $117\text{ W} \times 10.08\text{ h} = 1,179.4\text{ Wh}$ ($820.6\text{ Wh}$ surplus buffer for Rover charging) during Phase 3, $1,209.6\text{ Wh}$ / $790.4\text{ Wh}$ surplus from Phase 4.5 onward.
    - Heaters dynamically throttle to 1W if battery drops below **25%**, preventing brownouts under any surge.
 ---
 
@@ -236,6 +238,16 @@ To avoid monolithic multi-thousand-line script files, `early_game.py` decouples 
 - **`tools/contracts/`**: Contains dedicated solver scripts (`relay_hack.py`, `xenogenetics.py`, `corrupted_archive.py`, `sealed_vault.py`, `terminal_breach.py`, `data_tablet.py`).
 - **`tools/templates/early/`**: Contains standalone early-game machine controllers for all hardware types before 150k TP.
 - **`tools/early_game.py`**: Manages workspace detection, user prompts, command bridge hot-restarts, simulation synchronization, and deployment.
+
+### 4.4.1 Supply Dock (`tools/templates/early/supply_dock.py`)
+**Supply Logistics** (`research_orders_system` — the catalog's internal Tech id is `orders_system_unlock`, but `research.is_unlocked()`/`solar.py`'s `is_tech_unlocked()` need the public id; Terraform Index 110,000, between the Phase 4 breakout and the Phase 5 migration) unlocks Orders and Supply Dock purchasing. A minimal standalone controller (no `lib/` imports, no multi-dock planning or construction-material reservations — those only matter once several docks or an active Pioneer build are contending for the same stock) picks the best current Earth Order (recipe/tech-unlocking campaign orders first, then whichever order Inventory can already cover, falling back to Weekly Earth Orders that can still ship before they expire), loads it from Inventory, and enables dispatch. This lets a fresh 110k-TP dock start clearing the first few Earth Orders for credits immediately, instead of sitting idle until the 150k TP migration brings in the full `lib/supply_dock.py`. Registered both in `resolve_machine_template_type()` (`supply_dock` typeId, so `scan_and_deploy_machines` picks it up automatically) and as an explicit Phase 4.5 purchase step in `solar.py`'s Master Buyer loop (`solar.py` is the actual buyer — machine auto-deploy alone never buys anything new).
+
+Fitting Supply Dock 1 into the strict 25-slot budget without permanently idling under capacity: Phase 3 still deploys the full **7 Heaters** (24/25, 1 spare) during the actual Heat Rush, since trimming it up front just meant sitting at 23/25 for the ~50k TP gap until Supply Dock became relevant. Instead, `solar.py`'s Phase 4.5 step sells 1 Heater — down to 6 — only once `research_orders_system` unlocks and no slot is already free, immediately before buying the dock, since Heat Rush is long finished by 110k TP and the 7th Heater's slot is worth more as Supply Dock than as spare heating capacity.
+
+### 4.4.2 Rover Ore-Demand Splitting (`tools/templates/early/rover.py`)
+`best_site()` used to give any ore in the Smelter's published shortfall (`factory.ore`, from `smelter.py`'s `demand()`) a flat 10x scoring boost, and everything else a 10x penalty. With two ores (iron, silicon) both short at once, that flat boost did nothing to choose between them — whichever ore's sites were simply closer/purer (usually iron) won every round, and the Rover fleet fixated on it indefinitely even while the Smelter kept asking for silicon too. Fixed by weighting each ore by its **share of the total published shortfall** (`need / total_wanted`, scaled into a 0.1x–10x multiplier) instead of a flat boost — a Rover now drifts toward whichever ore has fallen furthest behind, and the split self-corrects as that ore's shortfall shrinks relative to the other's, rather than fixating on one forever. `wanted_ores()` was also hardened to copy a comms broadcast payload into a plain dict (mirrors `smelter.py`'s `demand()`) instead of returning it as-is, since the new scoring needs `.get()`/`.values()` and a broadcast payload is only guaranteed to support `.keys()` indexing.
+
+`smelter.py`'s `FLOORS` (minimum ingot stock) was also raised from 50 to 100 for both `iron_ingot` and `silicon` — a rough buffer so there's actually stock on hand for the first few Earth Orders the moment Supply Dock 1 picks one up, since exact order sizes aren't knowable ahead of assignment.
 
 ### 4.5 In-Game Command Bridge Protocol & CRLF Sync
 Scripts are hot-restarted in-game via `.codeterraform/command.json`:

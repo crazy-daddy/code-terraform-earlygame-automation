@@ -833,6 +833,7 @@ def resolve_machine_template_type(type_id: str) -> Optional[str]:
         "bio_collector": "bio_collector",
         "bio_lab": "bio_lab",
         "bio_exchange": "bio_exchange",
+        "supply_dock": "supply_dock",
     }
     if not type_id:
         return None
