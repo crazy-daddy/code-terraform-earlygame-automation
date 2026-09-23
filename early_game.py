@@ -1271,7 +1271,7 @@ def get_speedrun_recommendations(metrics: Dict[str, Any]) -> Tuple[str, List[str
                     recs.append(f"POWER ANCHOR: Buy {6 - c['solar']}x Solar Generator (500 cr ea, currently {c['solar']}/6) -> 300W peak output.")
 
             if o2 >= 1.0:
-                recs.append("BIO-LOOP ACTIVE: Auto Feeders unlocked at 1.0 ppt! Bio Collector, Lab, and Exchange are generating Biomass TP & Credits.")
+                recs.append("BIO-LOOP ACTIVE: Auto Feeders unlocked at 1.0 ppt! Bio Collector, Lab, and Exchange are earning Bio Order credits (no TP).")
             else:
                 recs.append(f"RUSH AUTO FEEDERS: Oxygen currently {o2:.3f}/1.0 ppt. Unlocks Auto Feeders & activates Bio-Loop in < 1 day!")
 
@@ -1326,7 +1326,7 @@ def get_speedrun_recommendations(metrics: Dict[str, Any]) -> Tuple[str, List[str
                 recs.append(f"HEAT RUSH: Recycle 11 Pressure gens down to 1. Deploy {needed}x Heat Generator (800 cr ea, currently {c['heater']}/7).")
                 recs.append("  -> Exact 24-25 Base Slots: 7 Solar + 4 Bat + 3 Bio + 1 Charger + 1 Smelter + 1 Pres + 7 Heat (0% penalty!).")
                 recs.append(f"  -> Reaches 12.0 Temp in ~5-6 days ({heat:.1f}/12.0 HU).")
-            recs.append("NEXT STEP: At 12.0 Temp, Tri-Pillar hits ~98,600 TP + Bio-Loop -> 100,000 TP Pioneer Breakout!")
+            recs.append("NEXT STEP: At 12.0 Temp, Tri-Pillar hits ~98,600 TP; keep generators running to 100,000 TP Pioneer Breakout!")
 
     elif tp < 100000:
         phase_title = "Phase 4: 100k TP Breakout & Pioneer Transition (Sec. 7.3 Step 5)"
