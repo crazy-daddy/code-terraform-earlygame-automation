@@ -16,7 +16,7 @@ Usage:
 
     # Manually deploy a specific machine with custom parameters:
     python tools/auto_deploy.py --deploy pioneer_5 --template pioneer_hauler \
-        --param HOME_BASE=outpost_3 --param DESTINATION=outpost_home
+        --param HOME_BASE=outpost_home
 """
 
 import os
@@ -61,8 +61,8 @@ def parse_deploy_log_line(line: str) -> Optional[Tuple[str, Optional[str], Dict[
     """
     Parses a log line for deployment markers and arbitrary parameter assignments.
     Supported patterns:
-      [DEPLOY] machine_id=pioneer_5 template=pioneer_hauler HOME_BASE="outpost_3" DESTINATION="outpost_home"
-      [DEPLOY] Deployed and equipped pioneer_5 with modules - use HOME_BASE="outpost_3", DESTINATION="outpost_home"
+      [DEPLOY] machine_id=pioneer_5 template=pioneer_hauler HOME_BASE="outpost_home"
+      [DEPLOY] Deployed and equipped pioneer_5 with modules - use HOME_BASE="outpost_home"
       [DEPLOY] {"machine_id": "solar_32", "template": "solar", "params": {...}}
     Returns (machine_id, template_name_or_None, params_dict) or None.
     """
@@ -257,11 +257,15 @@ class AutoDeployer:
         if extra_params:
             params.update(extra_params)
 
-        # Map aliases: SOURCE_OUTPOST_ID -> HOME_BASE, DESTINATION -> DESTINATION_OUTPOST_ID
+        # Map aliases: SOURCE_OUTPOST_ID -> HOME_BASE. A Pioneer hauler pulls to
+        # its HOME_BASE, so a push-style DESTINATION(_OUTPOST_ID) naming a real
+        # outpost becomes the HOME_BASE (the outpost being supplied).
         if "SOURCE_OUTPOST_ID" in params and "HOME_BASE" not in params:
             params["HOME_BASE"] = params["SOURCE_OUTPOST_ID"]
-        if "DESTINATION" in params and "DESTINATION_OUTPOST_ID" not in params:
-            params["DESTINATION_OUTPOST_ID"] = params["DESTINATION"]
+        destination = params.pop("DESTINATION_OUTPOST_ID", None) or params.pop("DESTINATION", None)
+        params.pop("DESTINATION", None)
+        if destination and destination not in ("None", "*", "any", "%"):
+            params["HOME_BASE"] = destination
 
         template_path = find_template(template_name, machine_type, machine_id)
         if not template_path:
