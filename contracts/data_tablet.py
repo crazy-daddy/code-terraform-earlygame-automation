@@ -1,4 +1,9 @@
 # Underground Data Tablet Contract Solver
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from user_stubs import data_tablet as self
+
 c = self.contract
 tablet = c.tablet
 rows = tablet.rows

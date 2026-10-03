@@ -1,3 +1,7 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from user_stubs import pressure_sensor as self
+
 raw_val = self.get_value()
 print(f"Raw pressure: {raw_val}")
 corrected = raw_val + 1 if int(raw_val) % 2 != 0 else raw_val

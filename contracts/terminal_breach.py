@@ -1,4 +1,9 @@
 # Alien Terminal Breach Contract Solver (Mastermind solver)
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from user_stubs import terminal_breach as self
+
 c = self.contract
 terminal = c.terminal
 length = terminal.length
